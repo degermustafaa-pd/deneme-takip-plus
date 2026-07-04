@@ -2450,7 +2450,7 @@ lb.addEventListener("wheel",e=>{
       await ref.update({ uid: user.uid, baglanma: Date.now() });
       setPair({ kod: kod, ad: d.ad, uid: user.uid });
       t("Danışmanına bağlandın ✅");
-      renderSyncCard();
+      updateSyncCard();
       syncNow(true);
       loadDuyurular();
     }catch(err){
@@ -2462,7 +2462,7 @@ lb.addEventListener("wheel",e=>{
     if(!confirm("Danışman bağlantısını kesmek istiyor musun? (Cihazındaki verilere dokunulmaz)")) return;
     setPair(null); localStorage.removeItem(HASH_KEY);
     t("Bağlantı kesildi");
-    renderSyncCard();
+    updateSyncCard();
   }
 
   /* ---- Duyurular ---- */
