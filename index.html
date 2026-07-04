@@ -2449,6 +2449,7 @@ lb.addEventListener("wheel",e=>{
       if(d.uid && d.uid !== user.uid){ t("Bu kod başka bir cihazda kullanılmış"); return; }
       await ref.update({ uid: user.uid, baglanma: Date.now() });
       setPair({ kod: kod, ad: d.ad, uid: user.uid });
+      var _ov = document.getElementById("dtplusOverlay"); if(_ov) _ov.style.display = "none";
       t("Danışmanına bağlandın ✅");
       updateSyncCard();
       syncNow(true);
@@ -2518,16 +2519,38 @@ lb.addEventListener("wheel",e=>{
     return '<div><b>🔗 Danışman Bağlantısı</b>'
       + '<div style="font-size:.82rem;color:var(--muted);margin:4px 0 10px;">Danışmanının verdiği kodu gir; deneme sonuçların ve konu analizlerin onunla paylaşılsın. <b>Soru fotoğrafların asla gönderilmez.</b></div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-      + '<input id="dtplusKod" placeholder="Örn: MD-4K7P" style="flex:1;min-width:140px;text-transform:uppercase;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;color:var(--text);padding:11px 13px;font-size:1rem;outline:none;" autocapitalize="characters" autocomplete="off">'
-      + '<button class="btn" id="dtplusConnect">Bağlan</button></div></div>';
+      + '<button class="btn" id="dtplusConnect">🔗 Kod Gir ve Bağlan</button></div></div>';
   }
   function attachSyncCard(){
     var b1 = document.getElementById("dtplusConnect");
-    if(b1) b1.onclick = function(){ connectWithCode(document.getElementById("dtplusKod").value); };
+    if(b1) b1.onclick = openKodOverlay;
     var b2 = document.getElementById("dtplusSyncNow");
     if(b2) b2.onclick = function(){ t("Gönderiliyor…"); syncNow(true); };
     var b3 = document.getElementById("dtplusDisconnect");
     if(b3) b3.onclick = disconnectPair;
+  }
+  function openKodOverlay(){
+    var ov = document.getElementById("dtplusOverlay");
+    if(!ov){
+      ov = document.createElement("div");
+      ov.id = "dtplusOverlay";
+      ov.style.cssText = "position:fixed;inset:0;background:rgba(10,8,20,.75);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:12vh 18px 20px;";
+      ov.innerHTML = '<div style="background:var(--surface,#221c3a);border:1px solid var(--line,#3a3160);border-radius:18px;padding:20px;max-width:380px;width:100%;box-shadow:0 18px 40px -18px rgba(0,0,0,.8);">'
+        + '<b style="font-size:1.05rem;">🔗 Danışman Bağlantısı</b>'
+        + '<div style="font-size:.82rem;color:var(--muted,#9a92c4);margin:8px 0 12px;">Danışmanının verdiği kodu gir. Soru fotoğrafların asla gönderilmez.</div>'
+        + '<input id="dtplusKod" placeholder="Örn: MD-4K7P" autocapitalize="characters" autocomplete="off" style="width:100%;box-sizing:border-box;text-transform:uppercase;background:var(--surface-2,#2a2347);border:1px solid var(--line,#3a3160);border-radius:12px;color:var(--text,#ece9fb);padding:13px;font-size:1.1rem;outline:none;letter-spacing:.06em;">'
+        + '<div style="display:flex;gap:8px;margin-top:14px;">'
+        + '<button class="btn ghost" id="dtplusIptal" style="flex:1;justify-content:center;">İptal</button>'
+        + '<button class="btn" id="dtplusBaglan" style="flex:1;justify-content:center;">Bağlan</button>'
+        + '</div></div>';
+      document.body.appendChild(ov);
+      ov.addEventListener("click", function(e){ if(e.target===ov) ov.style.display="none"; });
+      ov.querySelector("#dtplusIptal").onclick = function(){ ov.style.display="none"; };
+      ov.querySelector("#dtplusBaglan").onclick = function(){ connectWithCode(document.getElementById("dtplusKod").value); };
+      ov.querySelector("#dtplusKod").addEventListener("keydown", function(e){ if(e.key==="Enter") connectWithCode(this.value); });
+    }
+    ov.style.display = "flex";
+    setTimeout(function(){ var i = document.getElementById("dtplusKod"); if(i) i.focus(); }, 80);
   }
   function updateSyncCard(){
     var el = document.getElementById("dtplusSyncWrap");
