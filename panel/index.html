@@ -180,6 +180,17 @@ let cur = null;         // seçili öğrenci
 let curData = null;     // {denemeler, sonuclar, sorular, notlar}
 let curTab = "denemeler";
 
+function hataGoster(err){
+  console.warn(err);
+  var m = (err && err.code) || "";
+  if(m.indexOf("permission")>-1){
+    t("⛔ Yetki hatası: Firestore Rules'taki danışman e-postası, giriş e-postanla birebir aynı (küçük harf) olmalı.");
+  } else if(m.indexOf("unavailable")>-1 || m.indexOf("network")>-1){
+    t("İnternet bağlantısını kontrol et");
+  } else {
+    t("Hata: " + (err && (err.code || err.message) || "bilinmeyen"));
+  }
+}
 function esc(s){ return (s||"").toString().replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function t(m){ const el=document.getElementById("toast"); el.textContent=m; el.classList.add("show"); clearTimeout(t._x); t._x=setTimeout(()=>el.classList.remove("show"),2600); }
 function fmtNet(n){ return (Math.round(n*100)/100).toLocaleString("tr-TR"); }
@@ -218,13 +229,16 @@ async function createCode(){
   const ad=document.getElementById("yeniAd").value.trim();
   if(!ad){ t("Önce öğrencinin adını yaz"); return; }
   const kod=genKod();
-  await fs.collection("kodlar").doc(kod).set({ ad:ad, uid:null, olusturma:Date.now() });
-  document.getElementById("yeniAd").value="";
-  t("Kod üretildi: "+kod);
-  loadCodes();
+  try{
+    await fs.collection("kodlar").doc(kod).set({ ad:ad, uid:null, olusturma:Date.now() });
+    document.getElementById("yeniAd").value="";
+    t("Kod üretildi: "+kod);
+    loadCodes();
+  }catch(err){ hataGoster(err); }
 }
 async function loadCodes(){
-  const qs = await fs.collection("kodlar").get();
+  let qs;
+  try{ qs = await fs.collection("kodlar").get(); }catch(err){ hataGoster(err); return; }
   kodlar = qs.docs.map(d=>({kod:d.id, ...d.data()})).sort((a,b)=>(b.olusturma||0)-(a.olusturma||0));
   const host=document.getElementById("kodList");
   host.innerHTML = kodlar.map(k=>`
@@ -255,7 +269,8 @@ async function delKod(kod, bagli){
 
 /* ---------- ÖĞRENCİ LİSTESİ ---------- */
 async function loadStudents(){
-  const qs = await fs.collection("ogrenciler").get();
+  let qs;
+  try{ qs = await fs.collection("ogrenciler").get(); }catch(err){ hataGoster(err); return; }
   students = qs.docs.map(d=>({uid:d.id, ...d.data()})).sort((a,b)=>(a.ad||"").localeCompare(b.ad||"","tr"));
   renderStudents();
   renderKimeSelect();
@@ -311,7 +326,7 @@ async function sendDuyuru(){
     const ref=fs.collection("ogrenciler").doc(uid).collection("duyurular").doc();
     batch.set(ref,{ mesaj:metin, ts:Date.now() });
   });
-  await batch.commit();
+  try{ await batch.commit(); }catch(err){ hataGoster(err); return; }
   document.getElementById("duyuruMetin").value="";
   document.getElementById("duyuruSablon").value="";
   t(hedefler.length===1?"Mesaj gönderildi ✅":`${hedefler.length} öğrenciye gönderildi ✅`);
