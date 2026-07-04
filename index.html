@@ -2392,17 +2392,25 @@ lb.addEventListener("wheel",e=>{
     return out;
   }
 
+  function temizle(x){ return JSON.parse(JSON.stringify(x, function(k,v){ return v===undefined ? null : v; })); }
   async function syncNow(force){
     var p = pairInfo();
-    if(!p || !p.uid || syncBusy || !navigator.onLine || !initFB()) return;
+    if(!p || !p.uid || syncBusy) return;
+    if(!navigator.onLine){ if(force) t("İnternet yok — bağlanınca otomatik gönderilecek"); return; }
+    if(!initFB()){ if(force) t("Bağlantı servisi yüklenemedi — interneti kontrol et"); return; }
     syncBusy = true;
     try{
-      await ensureAuth();
-      var denemeler = await readAll("denemeler");
-      var sonuclar  = await readAll("sonuclar");
+      var user = await ensureAuth();
+      if(user.uid !== p.uid){
+        syncBusy = false;
+        if(force) t("⚠️ Cihaz kimliği değişmiş. Danışmanından kodu SIFIRLAMASINI iste, sonra Bağlantıyı Kes deyip aynı kodla yeniden bağlan.");
+        return;
+      }
+      var denemeler = temizle(await readAll("denemeler"));
+      var sonuclar  = temizle(await readAll("sonuclar"));
       var sorularT  = await readAll("sorular");
-      var notlar    = await readAll("notlar");
-      var sorular   = sorularT.map(stripSoru);
+      var notlar    = temizle(await readAll("notlar"));
+      var sorular   = temizle(sorularT.map(stripSoru));
 
       var payloadStr = JSON.stringify([denemeler, sonuclar, sorular, notlar]);
       var hash = payloadStr.length + ":" + (function(s){var h=0;for(var i=0;i<s.length;i+=7){h=((h<<5)-h+s.charCodeAt(i))|0;}return h;})(payloadStr);
@@ -2422,7 +2430,16 @@ lb.addEventListener("wheel",e=>{
       await batch.commit();
       localStorage.setItem(HASH_KEY, hash);
       localStorage.setItem("dtplus_last_sync", String(Date.now()));
-    }catch(err){ console.warn("Senkron ertelendi:", err && err.message); }
+      if(force) t("Danışmanına gönderildi ✅");
+    }catch(err){
+      console.warn("Senkron hatası:", err);
+      if(force){
+        var kod = (err && err.code) || "";
+        if(kod.indexOf("permission")>-1) t("⛔ Yetki hatası (kod: izin). Danışmanına söyle: kural/kod eşleşmesine bakalım.");
+        else if(kod.indexOf("invalid-argument")>-1) t("⛔ Veri biçimi hatası. Danışmanına bu mesajı ilet: invalid-argument");
+        else t("⛔ Gönderilemedi: " + (kod || (err && err.message) || "bilinmeyen hata"));
+      }
+    }
     syncBusy = false;
     updateSyncCard();
   }
