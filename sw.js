@@ -7,7 +7,7 @@
  * kodunu önbellekler.
  */
 
-const CACHE_ADI = "deneme-takip-plus-v1";
+const CACHE_ADI = "deneme-takip-plus-v2";
 
 const ON_BELLEKLENECEKLER = [
   "./",
