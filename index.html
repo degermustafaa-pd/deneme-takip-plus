@@ -2392,15 +2392,20 @@ lb.addEventListener("wheel",e=>{
     return out;
   }
 
+  var DTPLUS_SURUM = 4;
   function temizle(x){ return JSON.parse(JSON.stringify(x, function(k,v){ return v===undefined ? null : v; })); }
+  function zamanAsimi(promise, sn, ad){
+    return Promise.race([ promise, new Promise(function(_, rej){ setTimeout(function(){ rej(new Error("zaman-asimi: "+ad)); }, sn*1000); }) ]);
+  }
   async function syncNow(force){
     var p = pairInfo();
-    if(!p || !p.uid || syncBusy) return;
+    if(!p || !p.uid) return;
+    if(syncBusy){ if(force) t("Gönderim zaten sürüyor, birkaç saniye bekle…"); return; }
     if(!navigator.onLine){ if(force) t("İnternet yok — bağlanınca otomatik gönderilecek"); return; }
     if(!initFB()){ if(force) t("Bağlantı servisi yüklenemedi — interneti kontrol et"); return; }
     syncBusy = true;
     try{
-      var user = await ensureAuth();
+      var user = await zamanAsimi(ensureAuth(), 15, "giriş");
       if(user.uid !== p.uid){
         syncBusy = false;
         if(force) t("⚠️ Cihaz kimliği değişmiş. Danışmanından kodu SIFIRLAMASINI iste, sonra Bağlantıyı Kes deyip aynı kodla yeniden bağlan.");
@@ -2427,7 +2432,7 @@ lb.addEventListener("wheel",e=>{
       for(var i=1;i<parts.length;i++){
         batch.set(root.collection("veri").doc("sorular_"+i), { sorular: parts[i] });
       }
-      await batch.commit();
+      await zamanAsimi(batch.commit(), 20, "gönderim");
       localStorage.setItem(HASH_KEY, hash);
       localStorage.setItem("dtplus_last_sync", String(Date.now()));
       if(force) t("Danışmanına gönderildi ✅");
@@ -2437,6 +2442,7 @@ lb.addEventListener("wheel",e=>{
         var kod = (err && err.code) || "";
         if(kod.indexOf("permission")>-1) t("⛔ Yetki hatası (kod: izin). Danışmanına söyle: kural/kod eşleşmesine bakalım.");
         else if(kod.indexOf("invalid-argument")>-1) t("⛔ Veri biçimi hatası. Danışmanına bu mesajı ilet: invalid-argument");
+        else if(String(err && err.message).indexOf("zaman-asimi")>-1) t("⛔ Sunucuya ulaşılamadı (" + err.message + "). İnterneti kontrol edip tekrar dene.");
         else t("⛔ Gönderilemedi: " + (kod || (err && err.message) || "bilinmeyen hata"));
       }
     }
@@ -2458,7 +2464,7 @@ lb.addEventListener("wheel",e=>{
     if(!kod){ t("Danışmanının verdiği kodu gir"); return; }
     if(!navigator.onLine){ t("Bağlanmak için internet gerekli"); return; }
     try{
-      var user = await ensureAuth();
+      var user = await zamanAsimi(ensureAuth(), 15, "giriş");
       var ref = fs.collection("kodlar").doc(kod);
       var snap = await ref.get();
       if(!snap.exists){ t("Kod bulunamadı — danışmanınla kontrol et"); return; }
@@ -2527,14 +2533,14 @@ lb.addEventListener("wheel",e=>{
       return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">'
         + '<div><b>✅ Danışmanına bağlısın</b> <span style="color:var(--muted)">('+esc(p.ad)+')</span>'
         + '<div style="font-size:.78rem;color:var(--muted);margin-top:2px;" id="dtplusLast">Son gönderim: '+esc(lastTxt)+'</div>'
-        + '<div style="font-size:.78rem;color:var(--muted);">Netlerin ve konu analizlerin danışmanınla paylaşılıyor · <b>Fotoğrafların asla gönderilmez</b></div></div>'
+        + '<div style="font-size:.78rem;color:var(--muted);">Netlerin ve konu analizlerin danışmanınla paylaşılıyor · <b>Fotoğrafların asla gönderilmez</b> · <span style="opacity:.6">s'+DTPLUS_SURUM+'</span></div></div>'
         + '<div style="display:flex;gap:8px;">'
         + '<button class="btn ghost" id="dtplusSyncNow">🔄 Şimdi Gönder</button>'
         + '<button class="btn ghost" id="dtplusDisconnect" style="color:var(--red);">Bağlantıyı Kes</button>'
         + '</div></div>';
     }
     return '<div><b>🔗 Danışman Bağlantısı</b>'
-      + '<div style="font-size:.82rem;color:var(--muted);margin:4px 0 10px;">Danışmanının verdiği kodu gir; deneme sonuçların ve konu analizlerin onunla paylaşılsın. <b>Soru fotoğrafların asla gönderilmez.</b></div>'
+      + '<div style="font-size:.82rem;color:var(--muted);margin:4px 0 10px;">Danışmanının verdiği kodu gir; deneme sonuçların ve konu analizlerin onunla paylaşılsın. <b>Soru fotoğrafların asla gönderilmez.</b> <span style="opacity:.6">s'+DTPLUS_SURUM+'</span></div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
       + '<button class="btn" id="dtplusConnect">🔗 Kod Gir ve Bağlan</button></div></div>';
   }
