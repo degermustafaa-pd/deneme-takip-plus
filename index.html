@@ -2392,7 +2392,7 @@ lb.addEventListener("wheel",e=>{
     return out;
   }
 
-  var DTPLUS_SURUM = 6;
+  var DTPLUS_SURUM = 7;
   var dtplusDurum = "";
   function temizle(x){ return JSON.parse(JSON.stringify(x, function(k,v){ return v===undefined ? null : v; })); }
   function zamanAsimi(promise, sn, ad){
@@ -2440,7 +2440,7 @@ lb.addEventListener("wheel",e=>{
       if(force) t("Danışmanına gönderildi ✅");
     }catch(err){
       console.warn("Senkron hatası:", err);
-      dtplusDurum = "❌ " + ((err && (err.code || err.message)) || "hata");
+      dtplusDurum = "❌ " + ((err && err.code) || "") + " " + String((err && err.message) || "").slice(0, 160);
       if(force){
         var kod = (err && err.code) || "";
         if(kod.indexOf("permission")>-1) t("⛔ Yetki hatası (kod: izin). Danışmanına söyle: kural/kod eşleşmesine bakalım.");
@@ -2593,8 +2593,25 @@ lb.addEventListener("wheel",e=>{
     }catch(e){ log("okuma HATASI ❌: " + (e.code || e.message)); }
     try{
       await zamanAsimi(fs.collection("ogrenciler").doc(p.uid).set({ ad: p.ad, kod: p.kod, taniZamani: Date.now() }, { merge: true }), 10, "yazma");
-      log("yazma testi: OK ✅ (danışman panelinde artık görünmelisin)");
+      log("yazma testi: OK ✅");
     }catch(e){ log("yazma HATASI ❌: " + (e.code || e.message)); }
+    try{
+      log("— veri boyutları —");
+      var kb = function(x){ return Math.round(JSON.stringify(x).length/1024) + " KB"; };
+      var dnm = temizle(await readAll("denemeler"));
+      var snc = temizle(await readAll("sonuclar"));
+      var srT = await readAll("sorular");
+      var srS = temizle(srT.map(stripSoru));
+      var ntl = temizle(await readAll("notlar"));
+      log("denemeler: " + dnm.length + " kayıt · " + kb(dnm));
+      log("sonuçlar: " + snc.length + " kayıt · " + kb(snc));
+      log("sorular (fotoğrafsız): " + srS.length + " kayıt · " + kb(srS));
+      var enB = 0;
+      srS.forEach(function(q){ var s = JSON.stringify(q).length; if(s > enB) enB = s; });
+      log("en büyük tek soru kaydı: " + Math.round(enB/1024) + " KB");
+      log("notlar: " + ntl.length + " kayıt · " + kb(ntl));
+      log("toplam paket: " + kb([dnm, snc, srS, ntl]));
+    }catch(e){ log("boyut ölçümü hatası: " + (e.code || e.message)); }
     log("— bitti — bu ekranın görüntüsünü danışmanına gönder");
   }
   function openKodOverlay(){
