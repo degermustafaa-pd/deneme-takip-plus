@@ -2392,7 +2392,7 @@ lb.addEventListener("wheel",e=>{
     return out;
   }
 
-  var DTPLUS_SURUM = 4;
+  var DTPLUS_SURUM = 5;
   function temizle(x){ return JSON.parse(JSON.stringify(x, function(k,v){ return v===undefined ? null : v; })); }
   function zamanAsimi(promise, sn, ad){
     return Promise.race([ promise, new Promise(function(_, rej){ setTimeout(function(){ rej(new Error("zaman-asimi: "+ad)); }, sn*1000); }) ]);
@@ -2401,7 +2401,6 @@ lb.addEventListener("wheel",e=>{
     var p = pairInfo();
     if(!p || !p.uid) return;
     if(syncBusy){ if(force) t("Gönderim zaten sürüyor, birkaç saniye bekle…"); return; }
-    if(!navigator.onLine){ if(force) t("İnternet yok — bağlanınca otomatik gönderilecek"); return; }
     if(!initFB()){ if(force) t("Bağlantı servisi yüklenemedi — interneti kontrol et"); return; }
     syncBusy = true;
     try{
@@ -2462,7 +2461,6 @@ lb.addEventListener("wheel",e=>{
   async function connectWithCode(kodRaw){
     var kod = String(kodRaw||"").trim().toUpperCase();
     if(!kod){ t("Danışmanının verdiği kodu gir"); return; }
-    if(!navigator.onLine){ t("Bağlanmak için internet gerekli"); return; }
     try{
       var user = await zamanAsimi(ensureAuth(), 15, "giriş");
       var ref = fs.collection("kodlar").doc(kod);
@@ -2493,7 +2491,7 @@ lb.addEventListener("wheel",e=>{
   var duyurular = [];
   async function loadDuyurular(){
     var p = pairInfo();
-    if(!p || !p.uid || !navigator.onLine || !initFB()) return;
+    if(!p || !p.uid || !initFB()) return;
     try{
       await ensureAuth();
       var qs = await fs.collection("ogrenciler").doc(p.uid).collection("duyurular")
@@ -2536,6 +2534,7 @@ lb.addEventListener("wheel",e=>{
         + '<div style="font-size:.78rem;color:var(--muted);">Netlerin ve konu analizlerin danışmanınla paylaşılıyor · <b>Fotoğrafların asla gönderilmez</b> · <span style="opacity:.6">s'+DTPLUS_SURUM+'</span></div></div>'
         + '<div style="display:flex;gap:8px;">'
         + '<button class="btn ghost" id="dtplusSyncNow">🔄 Şimdi Gönder</button>'
+        + '<button class="btn ghost" id="dtplusTani">🩺 Tanıla</button>'
         + '<button class="btn ghost" id="dtplusDisconnect" style="color:var(--red);">Bağlantıyı Kes</button>'
         + '</div></div>';
     }
@@ -2549,8 +2548,49 @@ lb.addEventListener("wheel",e=>{
     if(b1) b1.onclick = openKodOverlay;
     var b2 = document.getElementById("dtplusSyncNow");
     if(b2) b2.onclick = function(){ t("Gönderiliyor…"); syncNow(true); };
+    var bt = document.getElementById("dtplusTani");
+    if(bt) bt.onclick = function(){ tanila(); };
     var b3 = document.getElementById("dtplusDisconnect");
     if(b3) b3.onclick = disconnectPair;
+  }
+  async function tanila(){
+    var ov = document.getElementById("dtplusTaniOv");
+    if(!ov){
+      ov = document.createElement("div");
+      ov.id = "dtplusTaniOv";
+      ov.style.cssText = "position:fixed;inset:0;background:rgba(10,8,20,.85);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:8vh 16px;overflow:auto;";
+      ov.innerHTML = '<div style="background:var(--surface,#221c3a);border:1px solid var(--line,#3a3160);border-radius:18px;padding:18px;max-width:420px;width:100%;">'
+        + '<b>🩺 Bağlantı Tanılaması</b>'
+        + '<pre id="dtplusTaniSonuc" style="white-space:pre-wrap;font-size:.82rem;line-height:1.7;color:var(--text,#ece9fb);margin:12px 0;font-family:ui-monospace,monospace;"></pre>'
+        + '<button class="btn" id="dtplusTaniKapat" style="width:100%;justify-content:center;">Kapat</button></div>';
+      document.body.appendChild(ov);
+      ov.querySelector("#dtplusTaniKapat").onclick = function(){ ov.style.display="none"; };
+    }
+    ov.style.display = "flex";
+    var pre = document.getElementById("dtplusTaniSonuc");
+    var out = [];
+    function log(s){ out.push(s); pre.textContent = out.join("\n"); }
+    log("sürüm: s" + DTPLUS_SURUM);
+    log("tarayıcı internet raporu: " + (navigator.onLine ? "var" : "YOK (yanlış olabilir)"));
+    log("Firebase SDK: " + (typeof firebase !== "undefined" ? "yüklü" : "YÜKLENEMEDİ ❌"));
+    if(!initFB()){ log("SONUÇ: SDK yok — sayfayı internetliyken yenile."); return; }
+    var p = pairInfo();
+    log("eşleşme kaydı: " + (p ? p.kod + " (" + p.ad + ")" : "YOK ❌"));
+    if(!p) return;
+    try{
+      var u = await zamanAsimi(ensureAuth(), 10, "giriş");
+      log("giriş: OK (kimlik " + u.uid.slice(0,6) + "…)");
+      log("kimlik eşleşmesi: " + (u.uid === p.uid ? "OK" : "UYUŞMUYOR ❌ (kodu sıfırlat, yeniden bağlan)"));
+    }catch(e){ log("giriş HATASI ❌: " + (e.code || e.message)); return; }
+    try{
+      var s = await zamanAsimi(fs.collection("kodlar").doc(p.kod).get(), 10, "okuma");
+      log("okuma testi: " + (s.exists ? "OK" : "kod silinmiş ❌"));
+    }catch(e){ log("okuma HATASI ❌: " + (e.code || e.message)); }
+    try{
+      await zamanAsimi(fs.collection("ogrenciler").doc(p.uid).set({ ad: p.ad, kod: p.kod, taniZamani: Date.now() }, { merge: true }), 10, "yazma");
+      log("yazma testi: OK ✅ (danışman panelinde artık görünmelisin)");
+    }catch(e){ log("yazma HATASI ❌: " + (e.code || e.message)); }
+    log("— bitti — bu ekranın görüntüsünü danışmanına gönder");
   }
   function openKodOverlay(){
     var ov = document.getElementById("dtplusOverlay");
