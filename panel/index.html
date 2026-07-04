@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Danışman Paneli · Mustafa Değer</title>
+<style>
+  :root{
+    --bg:#14111f; --bg-2:#1b1730; --surface:#221c3a; --surface-2:#2a2347; --surface-3:#332a55;
+    --line:#3a3160; --primary:#8b6dff; --primary-deep:#6c4ee0; --primary-soft:rgba(139,109,255,.16);
+    --amber:#ffc24b; --green:#3ddc97; --green-soft:rgba(61,220,151,.14);
+    --red:#ff6b81; --red-soft:rgba(255,107,129,.14);
+    --text:#ece9fb; --muted:#9a92c4; --muted-2:#6f679a;
+    --radius:18px; --radius-sm:12px; --shadow:0 18px 40px -18px rgba(0,0,0,.7);
+    font-size:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 12% -10%, #2a2152 0%, transparent 55%),
+      radial-gradient(900px 500px at 110% 10%, #241a44 0%, transparent 50%),
+      var(--bg);
+    color:var(--text); min-height:100vh;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 16px 80px;}
+  h1{font-size:1.35rem;margin:0;}
+  h2{font-size:1.05rem;margin:0 0 10px;}
+  .sub{color:var(--muted);font-size:.85rem;margin-top:3px;}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-top:16px;box-shadow:var(--shadow);}
+  .btn{display:inline-flex;align-items:center;gap:7px;border:none;border-radius:12px;padding:11px 16px;font-size:.95rem;font-weight:600;cursor:pointer;background:var(--surface-3);color:var(--text);}
+  .btn.primary{background:linear-gradient(135deg,var(--primary),var(--primary-deep));color:#fff;}
+  .btn.ghost{background:transparent;box-shadow:inset 0 0 0 1px var(--line);}
+  .btn.small{padding:7px 11px;font-size:.82rem;border-radius:10px;}
+  .btn:disabled{opacity:.5;cursor:default;}
+  input,textarea,select{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:12px;color:var(--text);
+    padding:11px 13px;font-size:1rem;outline:none;width:100%;font-family:inherit;
+  }
+  input:focus,textarea:focus{border-color:var(--primary);}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+  .stu{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;cursor:pointer;transition:border-color .15s;}
+  .stu:hover{border-color:var(--primary);}
+  .pill{display:inline-block;border-radius:99px;padding:2px 9px;font-size:.72rem;font-weight:700;}
+  .pill.r{background:var(--red-soft);color:var(--red);}
+  .pill.g{background:var(--green-soft);color:var(--green);}
+  .pill.a{background:rgba(255,194,75,.14);color:var(--amber);}
+  .muted{color:var(--muted);font-size:.82rem;}
+  .big{font-size:1.5rem;font-weight:800;}
+  table{width:100%;border-collapse:collapse;font-size:.87rem;}
+  th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);}
+  th{color:var(--muted);font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:.04em;}
+  .scroll{overflow-x:auto;}
+  .tabbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .tabbar .btn.active{background:linear-gradient(135deg,var(--primary),var(--primary-deep));color:#fff;}
+  .qcard{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;margin-top:10px;}
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--surface-3);border:1px solid var(--line);
+    color:var(--text);border-radius:12px;padding:11px 18px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;box-shadow:var(--shadow);}
+  #toast.show{opacity:1;}
+  .kodrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .kod{font-family:ui-monospace,Consolas,monospace;font-weight:800;letter-spacing:.08em;background:var(--primary-soft);color:var(--primary);padding:4px 10px;border-radius:8px;}
+  .spark{display:flex;align-items:flex-end;gap:3px;height:34px;}
+  .spark i{display:block;width:7px;background:var(--primary);border-radius:2px 2px 0 0;min-height:3px;}
+  a{color:var(--primary);}
+  @media (max-width:600px){ .wrap{padding:14px 10px 70px;} .panel{padding:14px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ======== GİRİŞ ======== -->
+  <div id="loginView">
+    <div style="text-align:center;margin-top:8vh;">
+      <div style="font-size:2.4rem;">📊</div>
+      <h1>Danışman Paneli</h1>
+      <div class="sub">Mustafa Değer · Deneme Takip Sistemi</div>
+    </div>
+    <div class="panel" style="max-width:400px;margin:22px auto;">
+      <div style="margin-bottom:10px;"><label class="muted">E-posta</label><input id="loginEmail" type="email" autocomplete="username"></div>
+      <div style="margin-bottom:14px;"><label class="muted">Şifre</label><input id="loginPass" type="password" autocomplete="current-password"></div>
+      <button class="btn primary" style="width:100%;justify-content:center;" onclick="doLogin()">Giriş Yap</button>
+      <div class="muted" id="loginErr" style="color:var(--red);margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- ======== ANA GÖRÜNÜM ======== -->
+  <div id="mainView" style="display:none;">
+    <div class="row" style="justify-content:space-between;">
+      <div><h1>📊 Danışman Paneli</h1><div class="sub" id="uyariBar"></div></div>
+      <div class="row">
+        <button class="btn ghost small" onclick="loadStudents()">🔄 Yenile</button>
+        <button class="btn ghost small" onclick="fbAuth.signOut()">Çıkış</button>
+      </div>
+    </div>
+
+    <!-- Öğrenci ekleme / kodlar -->
+    <div class="panel">
+      <h2>🔗 Öğrenci Kodları</h2>
+      <div class="muted" style="margin-bottom:10px;">Yeni öğrenci için kod üret, kodu öğrenciye gönder; öğrenci uygulamadaki "Danışman Bağlantısı" kartına girer.</div>
+      <div class="row">
+        <input id="yeniAd" placeholder="Öğrenci adı soyadı (örn. Ahmet Yılmaz)" style="flex:1;min-width:220px;">
+        <button class="btn primary" onclick="createCode()">＋ Kod Üret</button>
+      </div>
+      <div id="kodList" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- Duyuru -->
+    <div class="panel">
+      <h2>📢 Bildirim / Duyuru Gönder</h2>
+      <div class="row" style="margin-bottom:8px;">
+        <select id="duyuruKime" style="max-width:280px;"></select>
+        <select id="duyuruSablon" style="max-width:300px;" onchange="applyTemplate()">
+          <option value="">Şablon seç (isteğe bağlı)…</option>
+          <option value="Bu hafta deneme çözmeyi unutma! Sonuçları girince birlikte bakarız 💪">Deneme hatırlatması</option>
+          <option value="Kütüphanende tekrar zamanı gelen sorular birikti — 15 dakikanı ayır, farkı sen de göreceksin 🔁">Tekrar hatırlatması</option>
+          <option value="Görüşmemiz yaklaşıyor, deneme sonuçlarını girmeyi unutma. Görüşmede analizlerine birlikte bakacağız 📊">Görüşme hatırlatması</option>
+          <option value="Bu hafta hedefin küçük ama net: her gün 10 paragraf sorusu. Sonucu değil, hamleyi konuşacağız 🎯">Haftalık hedef</option>
+        </select>
+      </div>
+      <textarea id="duyuruMetin" rows="3" placeholder="Mesajını yaz… (öğrencinin uygulamasında 'Danışmanından Mesajlar' bölümünde görünür)"></textarea>
+      <div class="row" style="justify-content:space-between;margin-top:10px;">
+        <div class="muted">Not: Mesajlar şimdilik öğrenci uygulamayı açınca görünür; kilit ekranı bildirimi bir sonraki aşamada.</div>
+        <button class="btn primary" onclick="sendDuyuru()">Gönder</button>
+      </div>
+    </div>
+
+    <!-- Öğrenci listesi -->
+    <div class="panel">
+      <h2>👥 Öğrencilerim</h2>
+      <div id="stuGrid" class="grid" style="margin-top:6px;"></div>
+      <div id="stuEmpty" class="muted" style="display:none;">Henüz bağlanan öğrenci yok. Kod üretip öğrencine gönder.</div>
+    </div>
+  </div>
+
+  <!-- ======== ÖĞRENCİ DETAY ======== -->
+  <div id="detailView" style="display:none;">
+    <div class="row" style="justify-content:space-between;">
+      <div class="row" style="gap:12px;">
+        <button class="btn ghost small" onclick="showMain()">← Geri</button>
+        <div><h1 id="dAd"></h1><div class="sub" id="dSub"></div></div>
+      </div>
+      <button class="btn primary small" onclick="prefillDuyuru()">📢 Bu öğrenciye mesaj</button>
+    </div>
+    <div id="dOzet" class="panel"></div>
+    <div class="tabbar">
+      <button class="btn small active" data-dt="denemeler" onclick="dTab('denemeler')">📈 Denemeler</button>
+      <button class="btn small" data-dt="konular" onclick="dTab('konular')">📚 Konu Analizi</button>
+      <button class="btn small" data-dt="sorular" onclick="dTab('sorular')">❓ Sorular</button>
+      <button class="btn small" data-dt="notlar" onclick="dTab('notlar')">🗒️ Notlar</button>
+    </div>
+    <div id="dBody" class="panel"></div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+"use strict";
+const FB_CONFIG = {
+  apiKey: "AIzaSyAy2h3-VDRv24Q9Itjf7zSaKc8eOFYjqMo",
+  authDomain: "deneme-takip-mustafadeger.firebaseapp.com",
+  projectId: "deneme-takip-mustafadeger",
+  storageBucket: "deneme-takip-mustafadeger.firebasestorage.app",
+  messagingSenderId: "293823877102",
+  appId: "1:293823877102:web:0f0f9f8d7d507e3d4ac8ff"
+};
+firebase.initializeApp(FB_CONFIG);
+const fs = firebase.firestore();
+const fbAuth = firebase.auth();
+
+const DERSLER = ["TÜRKÇE","MATEMATİK","GEOMETRİ","FİZİK","KİMYA","BİYOLOJİ","TARİH","COĞRAFYA","FELSEFE","DİN KÜLTÜRÜ"];
+let students = [];      // {uid, ad, kod, ozet, guncelleme}
+let kodlar = [];
+let cur = null;         // seçili öğrenci
+let curData = null;     // {denemeler, sonuclar, sorular, notlar}
+let curTab = "denemeler";
+
+function esc(s){ return (s||"").toString().replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function t(m){ const el=document.getElementById("toast"); el.textContent=m; el.classList.add("show"); clearTimeout(t._x); t._x=setTimeout(()=>el.classList.remove("show"),2600); }
+function fmtNet(n){ return (Math.round(n*100)/100).toLocaleString("tr-TR"); }
+function trDate(iso){ if(!iso) return "—"; const d=new Date(iso+(iso.length===10?"T12:00":"")); return d.toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}); }
+function ago(ms){
+  if(!ms) return "hiç";
+  const g = Math.floor((Date.now()-ms)/86400000);
+  if(g<=0) return "bugün"; if(g===1) return "dün"; return g+" gün önce";
+}
+function netOf(d,y){ return (Number(d)||0)-(Number(y)||0)/4; }
+
+/* ---------- AUTH ---------- */
+function doLogin(){
+  const e=document.getElementById("loginEmail").value.trim(), p=document.getElementById("loginPass").value;
+  document.getElementById("loginErr").textContent="";
+  fbAuth.signInWithEmailAndPassword(e,p).catch(err=>{
+    document.getElementById("loginErr").textContent = "Giriş başarısız: e-posta/şifreyi kontrol et.";
+    console.warn(err);
+  });
+}
+document.getElementById("loginPass").addEventListener("keydown",e=>{ if(e.key==="Enter") doLogin(); });
+fbAuth.onAuthStateChanged(u=>{
+  document.getElementById("loginView").style.display = u ? "none" : "";
+  document.getElementById("mainView").style.display = u ? "" : "none";
+  document.getElementById("detailView").style.display = "none";
+  if(u){ loadStudents(); loadCodes(); }
+});
+
+/* ---------- KODLAR ---------- */
+function genKod(){
+  const cs="ABCDEFGHJKLMNPRSTUVYZ23456789"; let s="";
+  for(let i=0;i<4;i++) s+=cs[Math.floor(Math.random()*cs.length)];
+  return "MD-"+s;
+}
+async function createCode(){
+  const ad=document.getElementById("yeniAd").value.trim();
+  if(!ad){ t("Önce öğrencinin adını yaz"); return; }
+  const kod=genKod();
+  await fs.collection("kodlar").doc(kod).set({ ad:ad, uid:null, olusturma:Date.now() });
+  document.getElementById("yeniAd").value="";
+  t("Kod üretildi: "+kod);
+  loadCodes();
+}
+async function loadCodes(){
+  const qs = await fs.collection("kodlar").get();
+  kodlar = qs.docs.map(d=>({kod:d.id, ...d.data()})).sort((a,b)=>(b.olusturma||0)-(a.olusturma||0));
+  const host=document.getElementById("kodList");
+  host.innerHTML = kodlar.map(k=>`
+    <div class="kodrow">
+      <div><span class="kod">${esc(k.kod)}</span> &nbsp; ${esc(k.ad)}</div>
+      <div class="row">
+        ${k.uid ? '<span class="pill g">Bağlandı</span>' : '<span class="pill a">Bekliyor</span>'}
+        <button class="btn ghost small" onclick="copyKod('${esc(k.kod)}','${esc(k.ad)}')">📋 Mesajı Kopyala</button>
+        ${k.uid ? `<button class="btn ghost small" onclick="resetKod('${esc(k.kod)}')">Sıfırla</button>`:""}
+        <button class="btn ghost small" style="color:var(--red)" onclick="delKod('${esc(k.kod)}', ${!!k.uid})">Sil</button>
+      </div>
+    </div>`).join("") || '<div class="muted">Henüz kod yok.</div>';
+}
+function copyKod(kod, ad){
+  const msg = `Merhaba ${ad}! 👋 Deneme Takip uygulamanda "Analiz ve Geçmiş" ekranının altındaki 🔗 Danışman Bağlantısı kartına şu kodu gir: ${kod}\nBöylece deneme analizlerini görüşme öncesi inceleyip sana daha iyi yol gösterebileceğim. (Soru fotoğrafların bana gelmez.)`;
+  navigator.clipboard.writeText(msg).then(()=>t("Öğrenciye göndereceğin mesaj kopyalandı"));
+}
+async function resetKod(kod){
+  if(!confirm("Bu kodun cihaz bağlantısı sıfırlansın mı? (Öğrenci telefon değiştirdiyse kullan)")) return;
+  await fs.collection("kodlar").doc(kod).update({uid:null});
+  t("Kod sıfırlandı — öğrenci yeni cihazından tekrar girebilir"); loadCodes();
+}
+async function delKod(kod, bagli){
+  if(!confirm(bagli ? "Bu kod bir öğrenciye bağlı. Silersen öğrencinin gönderdiği veriler panelde kalır ama bağlantı kopar. Silinsin mi?" : "Kod silinsin mi?")) return;
+  await fs.collection("kodlar").doc(kod).delete();
+  t("Kod silindi"); loadCodes();
+}
+
+/* ---------- ÖĞRENCİ LİSTESİ ---------- */
+async function loadStudents(){
+  const qs = await fs.collection("ogrenciler").get();
+  students = qs.docs.map(d=>({uid:d.id, ...d.data()})).sort((a,b)=>(a.ad||"").localeCompare(b.ad||"","tr"));
+  renderStudents();
+  renderKimeSelect();
+}
+function renderStudents(){
+  const g=document.getElementById("stuGrid"), e=document.getElementById("stuEmpty");
+  if(!students.length){ g.innerHTML=""; e.style.display=""; document.getElementById("uyariBar").textContent=""; return; }
+  e.style.display="none";
+  let uyari=0;
+  g.innerHTML = students.map(s=>{
+    const o=s.ozet||{};
+    const son=o.sonDeneme;
+    const trend = (son && o.oncekiNet!=null) ? (son.net>o.oncekiNet?'<span style="color:var(--green)">▲</span>':(son.net<o.oncekiNet?'<span style="color:var(--red)">▼</span>':'▬')) : "";
+    const pasifGun = o.sonAktif ? Math.floor((Date.now()-o.sonAktif)/86400000) : 99;
+    if(pasifGun>=3 || (o.bekleyen||0)>=5) uyari++;
+    return `<div class="stu" onclick="openStudent('${s.uid}')">
+      <div class="row" style="justify-content:space-between;">
+        <b>${esc(s.ad||"—")}</b>
+        <span class="muted">${ago(o.sonAktif)}</span>
+      </div>
+      <div class="row" style="justify-content:space-between;margin-top:8px;">
+        <div><div class="muted">Son net</div><div class="big">${son?fmtNet(son.net):"—"} ${trend}</div></div>
+        <div style="text-align:right;">
+          <div class="muted">${o.toplamDeneme||0} deneme</div>
+          ${(o.bekleyen||0)>0?`<span class="pill r">${o.bekleyen} analiz bekliyor</span>`:'<span class="pill g">Analizler tamam ✓</span>'}
+        </div>
+      </div>
+      ${(o.tekrarBekleyen||0)>0?`<div style="margin-top:7px;"><span class="pill a">🔔 ${o.tekrarBekleyen} tekrar zamanı geldi</span></div>`:""}
+      ${pasifGun>=3 && pasifGun<99?`<div style="margin-top:7px;"><span class="pill r">⚠️ ${pasifGun} gündür aktif değil</span></div>`:""}
+    </div>`;
+  }).join("");
+  document.getElementById("uyariBar").textContent = uyari ? `${uyari} öğrenci ilgi bekliyor` : "Tüm öğrenciler yolunda 👌";
+}
+
+/* ---------- DUYURU ---------- */
+function renderKimeSelect(){
+  const sel=document.getElementById("duyuruKime");
+  sel.innerHTML = '<option value="__all__">👥 Tüm öğrencilere</option>' +
+    students.map(s=>`<option value="${s.uid}">${esc(s.ad)}</option>`).join("");
+}
+function applyTemplate(){
+  const v=document.getElementById("duyuruSablon").value;
+  if(v) document.getElementById("duyuruMetin").value=v;
+}
+async function sendDuyuru(){
+  const kime=document.getElementById("duyuruKime").value;
+  const metin=document.getElementById("duyuruMetin").value.trim();
+  if(!metin){ t("Önce mesajını yaz"); return; }
+  const hedefler = kime==="__all__" ? students.map(s=>s.uid) : [kime];
+  if(!hedefler.length){ t("Gönderilecek öğrenci yok"); return; }
+  const batch=fs.batch();
+  hedefler.forEach(uid=>{
+    const ref=fs.collection("ogrenciler").doc(uid).collection("duyurular").doc();
+    batch.set(ref,{ mesaj:metin, ts:Date.now() });
+  });
+  await batch.commit();
+  document.getElementById("duyuruMetin").value="";
+  document.getElementById("duyuruSablon").value="";
+  t(hedefler.length===1?"Mesaj gönderildi ✅":`${hedefler.length} öğrenciye gönderildi ✅`);
+}
+function prefillDuyuru(){
+  showMain();
+  document.getElementById("duyuruKime").value=cur.uid;
+  document.getElementById("duyuruMetin").focus();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ---------- ÖĞRENCİ DETAY ---------- */
+function showMain(){
+  document.getElementById("detailView").style.display="none";
+  document.getElementById("mainView").style.display="";
+}
+async function openStudent(uid){
+  cur = students.find(s=>s.uid===uid); if(!cur) return;
+  document.getElementById("mainView").style.display="none";
+  document.getElementById("detailView").style.display="";
+  document.getElementById("dAd").textContent = cur.ad||"—";
+  document.getElementById("dSub").textContent = "Son veri: "+ago(cur.guncelleme);
+  document.getElementById("dOzet").innerHTML = '<div class="muted">Veriler yükleniyor…</div>';
+  document.getElementById("dBody").innerHTML = "";
+  const root = fs.collection("ogrenciler").doc(uid).collection("veri");
+  const [dSnap, qSnap, nSnap] = await Promise.all([ root.doc("denemeler").get(), root.doc("sorular").get(), root.doc("notlar").get() ]);
+  const dd = dSnap.exists ? dSnap.data() : {denemeler:[],sonuclar:[]};
+  let sorular = qSnap.exists ? (qSnap.data().sorular||[]) : [];
+  const parca = qSnap.exists ? (qSnap.data().parca||1) : 1;
+  for(let i=1;i<parca;i++){
+    const ex = await root.doc("sorular_"+i).get();
+    if(ex.exists) sorular = sorular.concat(ex.data().sorular||[]);
+  }
+  curData = { denemeler:dd.denemeler||[], sonuclar:dd.sonuclar||[], sorular:sorular, notlar:(nSnap.exists?nSnap.data().notlar:[])||[] };
+  renderOzet(); dTab(curTab);
+}
+function examNets(){
+  const m={};
+  curData.sonuclar.forEach(s=>{ m[s.denemeId]=(m[s.denemeId]||0)+netOf(s.dogru,s.yanlis); });
+  return curData.denemeler.slice().sort((a,b)=>(a.tarih||"").localeCompare(b.tarih||"")||a.id-b.id)
+    .map(d=>({ ...d, net: m[d.id]||0 }));
+}
+function renderOzet(){
+  const o=cur.ozet||{};
+  const nets=examNets();
+  const last8=nets.slice(-8);
+  const maxN=Math.max(1,...last8.map(x=>x.net));
+  const spark=last8.map(x=>`<i title="${esc(x.ad)}: ${fmtNet(x.net)}" style="height:${Math.max(8,Math.round(x.net/maxN*100))}%"></i>`).join("");
+  document.getElementById("dOzet").innerHTML = `
+    <div class="row" style="justify-content:space-between;gap:18px;">
+      <div><div class="muted">Toplam deneme</div><div class="big">${o.toplamDeneme||0}</div></div>
+      <div><div class="muted">Son net</div><div class="big">${o.sonDeneme?fmtNet(o.sonDeneme.net):"—"}</div></div>
+      <div><div class="muted">Analiz bekleyen</div><div class="big" style="color:${(o.bekleyen||0)>0?'var(--red)':'var(--green)'}">${o.bekleyen||0}</div></div>
+      <div><div class="muted">Tekrar zamanı gelen</div><div class="big" style="color:${(o.tekrarBekleyen||0)>0?'var(--amber)':'var(--green)'}">${o.tekrarBekleyen||0}</div></div>
+      <div class="spark">${spark}</div>
+    </div>`;
+}
+function dTab(tab){
+  curTab=tab;
+  document.querySelectorAll("[data-dt]").forEach(b=>b.classList.toggle("active", b.dataset.dt===tab));
+  const host=document.getElementById("dBody");
+  if(tab==="denemeler") return renderDenemeler(host);
+  if(tab==="konular") return renderKonular(host);
+  if(tab==="sorular") return renderSorular(host);
+  if(tab==="notlar") return renderNotlarD(host);
+}
+function renderDenemeler(host){
+  const nets=examNets().reverse();
+  if(!nets.length){ host.innerHTML='<div class="muted">Henüz deneme verisi gelmedi.</div>'; return; }
+  host.innerHTML = `<div class="scroll"><table><thead><tr><th>Deneme</th><th>Tarih</th><th>Zorluk</th><th>Net</th><th>Deneme Notu</th></tr></thead><tbody>` +
+    nets.map(d=>`<tr><td><b>${esc(d.ad)}</b></td><td>${trDate(d.tarih)}</td><td>${esc(d.zorluk||"Orta")}</td><td><b>${fmtNet(d.net)}</b></td><td style="max-width:340px;white-space:pre-wrap;">${esc(d.not||"")}</td></tr>`).join("") +
+    `</tbody></table></div>`;
+}
+function renderKonular(host){
+  const agg={};
+  curData.sonuclar.forEach(s=>{
+    const k=s.ders+"||"+s.konu;
+    if(!agg[k]) agg[k]={ders:s.ders,konu:s.konu,d:0,y:0,b:0};
+    agg[k].d+=Number(s.dogru)||0; agg[k].y+=Number(s.yanlis)||0; agg[k].b+=Number(s.bos)||0;
+  });
+  const rows=Object.values(agg).filter(r=>r.d+r.y+r.b>0);
+  if(!rows.length){ host.innerHTML='<div class="muted">Henüz konu verisi yok.</div>'; return; }
+  let html="";
+  DERSLER.forEach(ders=>{
+    const rs=rows.filter(r=>r.ders===ders).map(r=>({...r, top:r.d+r.y+r.b, p: (r.d+r.y)>0?Math.round(r.d/(r.d+r.y)*100):null}))
+      .sort((a,b)=>(a.p??101)-(b.p??101));
+    if(!rs.length) return;
+    html+=`<h2 style="margin-top:16px;">${esc(ders)}</h2><div class="scroll"><table><thead><tr><th>Konu</th><th>Başarı</th><th>Soru</th><th>D</th><th>Y</th><th>B</th></tr></thead><tbody>`+
+      rs.map(r=>{
+        const c = r.p==null?"var(--muted)":(r.p>=70?"var(--green)":(r.p>=40?"var(--amber)":"var(--red)"));
+        return `<tr><td>${esc(r.konu)}</td><td><b style="color:${c}">${r.p==null?"—":"%"+r.p}</b></td><td>${r.top}</td><td style="color:var(--green)">${r.d}</td><td style="color:var(--red)">${r.y}</td><td>${r.b}</td></tr>`;
+      }).join("")+`</tbody></table></div>`;
+  });
+  host.innerHTML = html + '<div class="muted" style="margin-top:10px;">Konular başarı yüzdesine göre (en zayıftan) sıralı — görüşme gündemin hazır. 🎯</div>';
+}
+function renderSorular(host){
+  const qs=curData.sorular.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  if(!qs.length){ host.innerHTML='<div class="muted">Henüz soru kaydı gelmedi.</div>'; return; }
+  const bek=qs.filter(q=>q.durum!=="edildi");
+  host.innerHTML =
+    `<div class="row" style="margin-bottom:6px;"><span class="pill r">${bek.length} analiz bekliyor</span><span class="pill g">${qs.length-bek.length} analiz edildi</span><span class="muted">· Fotoğraflar öğrencinin cihazında kalır, burada görünmez.</span></div>` +
+    qs.map(q=>`
+      <div class="qcard">
+        <div class="row" style="justify-content:space-between;">
+          <b>${esc(q.ders)} · ${esc(q.konu)}</b>
+          ${q.durum==="edildi"?'<span class="pill g">Analiz edildi</span>':'<span class="pill r">Bekliyor</span>'}
+        </div>
+        <div class="muted" style="margin-top:4px;">📌 ${q.kaynakTipi==="harici" ? esc(q.kaynakAd)+" (Harici)" : esc(q.kaynakAd)+" Denemesi"}${q.favori?" · ⭐":""}${q.tekrarGun?` · 🔁 ${q.tekrarGun} günde bir`:""}</div>
+        ${q.not?`<div style="margin-top:6px;white-space:pre-wrap;">📝 ${esc(q.not)}</div>`:""}
+      </div>`).join("");
+}
+function renderNotlarD(host){
+  const dn=curData.denemeler.filter(d=>d.not);
+  const sn=curData.notlar.slice().sort((a,b)=>(b.tarih||"").localeCompare(a.tarih||""));
+  let html="";
+  html+="<h2>📋 Deneme Notları</h2>";
+  html+= dn.length ? dn.map(d=>`<div class="qcard"><b>${esc(d.ad)}</b> <span class="muted">· ${trDate(d.tarih)}</span><div style="margin-top:5px;white-space:pre-wrap;">${esc(d.not)}</div></div>`).join("") : '<div class="muted">Deneme notu yok.</div>';
+  html+='<h2 style="margin-top:18px;">🗒️ Serbest Notlar</h2>';
+  html+= sn.length ? sn.map(n=>`<div class="qcard"><b>${esc(n.baslik||"Not")}</b> <span class="muted">· ${trDate(n.tarih)}</span><div style="margin-top:5px;white-space:pre-wrap;">${esc(n.icerik)}</div></div>`).join("") : '<div class="muted">Serbest not yok.</div>';
+  host.innerHTML=html;
+}
+</script>
+</body>
+</html>
