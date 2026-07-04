@@ -2392,7 +2392,8 @@ lb.addEventListener("wheel",e=>{
     return out;
   }
 
-  var DTPLUS_SURUM = 5;
+  var DTPLUS_SURUM = 6;
+  var dtplusDurum = "";
   function temizle(x){ return JSON.parse(JSON.stringify(x, function(k,v){ return v===undefined ? null : v; })); }
   function zamanAsimi(promise, sn, ad){
     return Promise.race([ promise, new Promise(function(_, rej){ setTimeout(function(){ rej(new Error("zaman-asimi: "+ad)); }, sn*1000); }) ]);
@@ -2403,6 +2404,7 @@ lb.addEventListener("wheel",e=>{
     if(syncBusy){ if(force) t("Gönderim zaten sürüyor, birkaç saniye bekle…"); return; }
     if(!initFB()){ if(force) t("Bağlantı servisi yüklenemedi — interneti kontrol et"); return; }
     syncBusy = true;
+    dtplusDurum = "⏳ Gönderiliyor…"; updateSyncCard();
     try{
       var user = await zamanAsimi(ensureAuth(), 15, "giriş");
       if(user.uid !== p.uid){
@@ -2418,7 +2420,7 @@ lb.addEventListener("wheel",e=>{
 
       var payloadStr = JSON.stringify([denemeler, sonuclar, sorular, notlar]);
       var hash = payloadStr.length + ":" + (function(s){var h=0;for(var i=0;i<s.length;i+=7){h=((h<<5)-h+s.charCodeAt(i))|0;}return h;})(payloadStr);
-      if(!force && localStorage.getItem(HASH_KEY) === hash){ syncBusy=false; updateSyncCard(); return; }
+      if(!force && localStorage.getItem(HASH_KEY) === hash){ syncBusy=false; dtplusDurum=""; updateSyncCard(); return; }
 
       var ozet = computeOzet(denemeler, sonuclar, sorularT);
       var root = fs.collection("ogrenciler").doc(p.uid);
@@ -2434,9 +2436,11 @@ lb.addEventListener("wheel",e=>{
       await zamanAsimi(batch.commit(), 20, "gönderim");
       localStorage.setItem(HASH_KEY, hash);
       localStorage.setItem("dtplus_last_sync", String(Date.now()));
+      dtplusDurum = "✅ Gönderildi";
       if(force) t("Danışmanına gönderildi ✅");
     }catch(err){
       console.warn("Senkron hatası:", err);
+      dtplusDurum = "❌ " + ((err && (err.code || err.message)) || "hata");
       if(force){
         var kod = (err && err.code) || "";
         if(kod.indexOf("permission")>-1) t("⛔ Yetki hatası (kod: izin). Danışmanına söyle: kural/kod eşleşmesine bakalım.");
@@ -2531,6 +2535,7 @@ lb.addEventListener("wheel",e=>{
       return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">'
         + '<div><b>✅ Danışmanına bağlısın</b> <span style="color:var(--muted)">('+esc(p.ad)+')</span>'
         + '<div style="font-size:.78rem;color:var(--muted);margin-top:2px;" id="dtplusLast">Son gönderim: '+esc(lastTxt)+'</div>'
+        + (dtplusDurum ? '<div style="font-size:.8rem;margin-top:2px;font-weight:600;">'+esc(dtplusDurum)+'</div>' : '')
         + '<div style="font-size:.78rem;color:var(--muted);">Netlerin ve konu analizlerin danışmanınla paylaşılıyor · <b>Fotoğrafların asla gönderilmez</b> · <span style="opacity:.6">s'+DTPLUS_SURUM+'</span></div></div>'
         + '<div style="display:flex;gap:8px;">'
         + '<button class="btn ghost" id="dtplusSyncNow">🔄 Şimdi Gönder</button>'
